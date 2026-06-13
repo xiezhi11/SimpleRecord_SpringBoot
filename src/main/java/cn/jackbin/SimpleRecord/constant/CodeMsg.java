@@ -40,6 +40,9 @@ public enum CodeMsg {
     SEX_FORMAT_ERROR(600003,"性别未识别"),
     ROLE_NAME_EXIST(600004, "角色名重复"),
     ROLE_EDIT_NOT_ALLOWED(600005, "系统内置角色请勿删除或改名"),
+    ROLE_NOT_FOUND(600007, "分配的角色不存在"),
+    ROLE_DISABLED(600008, "分配的角色已被停用"),
+    ROLE_ASSIGN_DUPLICATE(600009, "分配的角色列表包含重复项"),
     DICT_CODE_EXIST(600006, "字典编码重复"),
 
     // 记账相关 格式700 xxx
