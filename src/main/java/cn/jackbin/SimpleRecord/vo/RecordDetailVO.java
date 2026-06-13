@@ -5,9 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+import javax.validation.constraints.*;
 import java.util.Date;
 
 /**
@@ -37,6 +35,8 @@ public class RecordDetailVO {
     private String recordCategory;
 
     @NotNull(message = "金额不能为空")
+    @DecimalMin(value = "0.01", message = "金额必须大于零")
+    @Digits(integer = 10, fraction = 2, message = "金额格式不正确，小数位不能超过两位")
     private Double amount;
 
     @NotNull(message = "日期不能为空")

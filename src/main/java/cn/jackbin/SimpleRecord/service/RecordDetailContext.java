@@ -1,6 +1,7 @@
 package cn.jackbin.SimpleRecord.service;
 
 import cn.jackbin.SimpleRecord.bo.RecordDetailBO;
+import cn.jackbin.SimpleRecord.common.utils.AmountUtils;
 import cn.jackbin.SimpleRecord.constant.CodeMsg;
 import cn.jackbin.SimpleRecord.constant.RecordConstant;
 import cn.jackbin.SimpleRecord.entity.*;
@@ -52,6 +53,8 @@ public class RecordDetailContext {
         BeanUtils.copyProperties(vo, bo);
         // 设置recordTypeId
         bo.setRecordTypeId(dictItemDO.getId().intValue());
+        // 统一校验金额（正数校验 + 精度归一化），避免各处理类各自处理金额导致行为不一致
+        bo.setAmount(AmountUtils.validateAndNormalize(bo.getAmount()));
         beforeHandle(vo.getId(), userId, bo.getTargetAccountId(), bo.getRecordBookId());
         handler.check(userId, bo);
         // 如果有id就是编辑
