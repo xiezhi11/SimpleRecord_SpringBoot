@@ -64,6 +64,7 @@ public enum CodeMsg {
     RECORD_BOOK_RELATED(700019, "账户仍有记账记录关联"),
     RECORD_ACCOUNT_RELATED(700019, "账户仍有记账记录关联"),
     RECORD_ACCOUNT_NAME_REPEAT(700020, "记账账户名称不可重复"),
+    RECORD_AMOUNT_ILLEGAL(700021, "金额必须为大于0的数值"),
     ;
 
     private final int retCode;

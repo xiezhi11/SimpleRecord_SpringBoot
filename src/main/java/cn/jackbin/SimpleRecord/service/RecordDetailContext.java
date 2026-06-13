@@ -5,6 +5,7 @@ import cn.jackbin.SimpleRecord.constant.CodeMsg;
 import cn.jackbin.SimpleRecord.constant.RecordConstant;
 import cn.jackbin.SimpleRecord.entity.*;
 import cn.jackbin.SimpleRecord.exception.BusinessException;
+import cn.jackbin.SimpleRecord.utils.AmountUtil;
 import cn.jackbin.SimpleRecord.vo.RecordDetailVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,8 @@ public class RecordDetailContext {
         BeanUtils.copyProperties(vo, bo);
         // 设置recordTypeId
         bo.setRecordTypeId(dictItemDO.getId().intValue());
+        // 统一校验金额为正数并处理小数精度，各记账类型只负责决定金额正负
+        bo.setAmount(AmountUtil.normalize(bo.getAmount()));
         beforeHandle(vo.getId(), userId, bo.getTargetAccountId(), bo.getRecordBookId());
         handler.check(userId, bo);
         // 如果有id就是编辑
