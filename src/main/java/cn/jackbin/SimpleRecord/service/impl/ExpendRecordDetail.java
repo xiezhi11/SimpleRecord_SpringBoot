@@ -17,6 +17,7 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -81,14 +82,27 @@ public class ExpendRecordDetail implements RecordDetailHandler {
      */
     @Transactional
     public void recoverRecords(Integer userId, List<Long> ids){
-        if (ids.size() == 0)
-            throw new BusinessException(CodeMsg.PARAMETER_ILLEGAL);
-        // 收集所有待报销的记录
-        List<RecordDetailDO> list = recordDetailService.listByIds(ids).stream()
-                .filter(n -> n.getRecoverableStatus() == RecordConstant.TO_RECOVERABLE).collect(Collectors.toList());
-        RecordDetailDO recordDetailDO = list.stream().filter(n -> n.getUserId() != userId.intValue()).findFirst().orElse(null);
-        if (list.size() != ids.size() || recordDetailDO != null){
+        // 入参校验：待报销列表不能为空
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException(CodeMsg.PARAMETER_ISNULL);
+        }
+        // 过滤重复 id，避免同一条记录被重复报销
+        List<Long> distinctIds = ids.stream().distinct().collect(Collectors.toList());
+        // 查询记录，数量不一致说明存在查不到对应数据的 id
+        List<RecordDetailDO> list = recordDetailService.listByIds(distinctIds);
+        if (list.size() != distinctIds.size()) {
             throw new BusinessException(CodeMsg.NOT_FIND_DATA);
+        }
+        // 归属校验：禁止报销他人的记账记录
+        boolean existsOthers = list.stream().anyMatch(n -> !Objects.equals(n.getUserId(), userId));
+        if (existsOthers) {
+            throw new BusinessException(CodeMsg.OPERATE_RECORD_FORBIDDEN);
+        }
+        // 状态校验：仅待报销状态的记录可以报销
+        boolean existsNotRecoverable = list.stream()
+                .anyMatch(n -> !Objects.equals(n.getRecoverableStatus(), RecordConstant.TO_RECOVERABLE));
+        if (existsNotRecoverable) {
+            throw new BusinessException(CodeMsg.RECORD_NOT_RECOVERABLE);
         }
         // 获取dictDO
         DictDO dictDO = dictService.getByCode(RecordConstant.RECORD_TYPE);

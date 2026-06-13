@@ -64,6 +64,7 @@ public enum CodeMsg {
     RECORD_BOOK_RELATED(700019, "账户仍有记账记录关联"),
     RECORD_ACCOUNT_RELATED(700019, "账户仍有记账记录关联"),
     RECORD_ACCOUNT_NAME_REPEAT(700020, "记账账户名称不可重复"),
+    RECORD_NOT_RECOVERABLE(700021, "存在不可报销的记账记录，仅待报销状态的记录可报销"),
     ;
 
     private final int retCode;
