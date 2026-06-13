@@ -24,11 +24,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -185,33 +186,31 @@ public class RecordDetailServiceImpl extends ServiceImpl<RecordDetailMapper, Rec
     public List<MonthRecordAnalysisDTO> getLatestSixMonthList(Integer userId, String recordTypeCode, Date beginDate, Date endDate) {
         DictDO dictDO = dictService.getByCode(RecordConstant.RECORD_TYPE);
         DictItemDO dictItemDO = dictItemService.getByValue(dictDO.getId().intValue(), recordTypeCode);
-        List<MonthRecordAnalysisDTO> ret = new ArrayList<>();
         List<MonthRecordAnalysisDTO> recordAnalysisDTOS = recordDetailMapper.queryByInterval(userId, dictItemDO.getId().intValue(), beginDate, endDate);
-        // 补充缺失的月份
-        List<Long> intervalDate = DateUtil.getIntervalTimeByMonth(beginDate, endDate);
-        int beginIndex = 0; // 开始标记
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
-        try {
-            out: for (int i=0; i<intervalDate.size() -1; i++) {
-                Date tempDate = new Date(intervalDate.get(i));
-                for (int j=beginIndex; j<recordAnalysisDTOS.size(); j++){
-                    MonthRecordAnalysisDTO temp = recordAnalysisDTOS.get(j);
-                    if (temp == null)
-                        continue ;
-                    if (tempDate.equals(sdf.parse(temp.getOccurMonth()))){
-                        ret.add(temp);
-                        beginIndex++;
-                        continue out;   // 进入下一次循环
-                    }
-                }
-                MonthRecordAnalysisDTO monthRecord = new MonthRecordAnalysisDTO();
-                monthRecord.setOccurMonth(sdf.format(tempDate));
-                ret.add(monthRecord);
+        // 按月份(yyyy-MM)建立索引，便于按月对齐查询结果
+        Map<String, MonthRecordAnalysisDTO> monthMap = new HashMap<>();
+        for (MonthRecordAnalysisDTO dto : recordAnalysisDTOS) {
+            if (dto != null && dto.getOccurMonth() != null) {
+                monthMap.put(dto.getOccurMonth(), dto);
             }
-        } catch (ParseException e){
-            throw new BusinessException(CodeMsg.FAILED);
         }
-
+        // 按区间逐月补全，保证每个月份都返回结构一致的数据（明确的月份 + 默认金额）
+        List<MonthRecordAnalysisDTO> ret = new ArrayList<>();
+        List<Long> intervalDate = DateUtil.getIntervalTimeByMonth(beginDate, endDate);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+        for (int i = 0; i < intervalDate.size() - 1; i++) {
+            String occurMonth = sdf.format(new Date(intervalDate.get(i)));
+            MonthRecordAnalysisDTO record = monthMap.get(occurMonth);
+            if (record == null) {
+                record = new MonthRecordAnalysisDTO();
+                record.setOccurMonth(occurMonth);
+            }
+            // 金额兜底：缺失或为空统一为默认值，避免前端额外处理
+            if (record.getTotal() == null) {
+                record.setTotal(0.0);
+            }
+            ret.add(record);
+        }
         return ret;
     }
 
