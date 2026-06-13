@@ -73,6 +73,13 @@ public interface RecordDetailService extends IService<RecordDetailDO> {
     void getRecoverableList(Integer userId, Integer recoverableStatus, PageBO<RecordDetailDTO> pageBO);
 
     /**
+     * 批量报销
+     * @param userId 当前用户ID
+     * @param ids 待报销记录ID列表
+     */
+    void recoverRecords(Integer userId, List<Long> ids);
+
+    /**
      * 查询用户六个月内的记账记录
      */
     List<MonthRecordAnalysisDTO> getLatestSixMonthList(Integer userId, String recordTypeCode, Date beginDate, Date endDate);

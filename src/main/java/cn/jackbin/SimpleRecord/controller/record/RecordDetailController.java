@@ -9,8 +9,8 @@ import cn.jackbin.SimpleRecord.common.enums.BusinessType;
 import cn.jackbin.SimpleRecord.constant.RecordConstant;
 import cn.jackbin.SimpleRecord.dto.RecordDetailDTO;
 import cn.jackbin.SimpleRecord.service.RecordDetailContext;
-import cn.jackbin.SimpleRecord.service.impl.ExpendRecordDetail;
 import cn.jackbin.SimpleRecord.vo.PageVO;
+import cn.jackbin.SimpleRecord.vo.RecoverRecordsVO;
 import cn.jackbin.SimpleRecord.vo.RecordDetailVO;
 import cn.jackbin.SimpleRecord.vo.Result;
 import cn.jackbin.SimpleRecord.service.RecordDetailService;
@@ -22,7 +22,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Positive;
-import java.util.List;
 
 /**
  * @author: create by bin
@@ -40,9 +39,6 @@ public class RecordDetailController {
 
     @Autowired
     private RecordDetailContext recordDetailContext;
-
-    @Autowired
-    private ExpendRecordDetail expendRecordDetail;
 
     /**
      * 记账
@@ -111,9 +107,9 @@ public class RecordDetailController {
     @CommonLog(title = "批量报销", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "批量报销")
     @PutMapping("/recover")
-    public Result<?> recoverRecords(@RequestBody List<Long> ids){
+    public Result<?> recoverRecords(@RequestBody @Validated RecoverRecordsVO vo){
         Long userId = LocalUserId.get();
-        expendRecordDetail.recoverRecords(userId.intValue(), ids);
+        recordDetailService.recoverRecords(userId.intValue(), vo.getIds());
         return Result.success();
     }
 }

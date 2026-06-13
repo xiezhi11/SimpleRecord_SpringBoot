@@ -64,6 +64,10 @@ public enum CodeMsg {
     RECORD_BOOK_RELATED(700019, "账户仍有记账记录关联"),
     RECORD_ACCOUNT_RELATED(700019, "账户仍有记账记录关联"),
     RECORD_ACCOUNT_NAME_REPEAT(700020, "记账账户名称不可重复"),
+    RECOVER_IDS_EMPTY(700021, "报销记录ID列表不能为空"),
+    RECOVER_RECORD_NOT_FOUND(700022, "报销记录不存在"),
+    RECOVER_NOT_BELONG_TO_USER(700023, "存在不属于当前用户的报销记录"),
+    RECOVER_STATUS_NOT_ALLOWED(700024, "存在状态不允许报销的记录，仅待报销状态的记录可报销"),
     ;
 
     private final int retCode;

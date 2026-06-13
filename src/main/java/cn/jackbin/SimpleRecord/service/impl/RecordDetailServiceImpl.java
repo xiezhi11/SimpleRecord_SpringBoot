@@ -23,13 +23,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -179,6 +182,67 @@ public class RecordDetailServiceImpl extends ServiceImpl<RecordDetailMapper, Rec
         recordDetailMapper.queryRecoverableList(page, userId, recoverableStatus);
         pageBO.setTotal((int) page.getTotal());
         pageBO.setList(page.getRecords());
+    }
+
+    @Override
+    @Transactional
+    public void recoverRecords(Integer userId, List<Long> ids) {
+        // 1. 过滤重复 id
+        List<Long> distinctIds = new ArrayList<>(new LinkedHashSet<>(ids));
+
+        // 2. 去重后列表不能为空
+        if (distinctIds.isEmpty()) {
+            throw new BusinessException(CodeMsg.RECOVER_IDS_EMPTY);
+        }
+
+        // 3. 查询记录并校验是否存在
+        List<RecordDetailDO> records = recordDetailMapper.selectBatchIds(distinctIds);
+        if (records.size() != distinctIds.size()) {
+            throw new BusinessException(CodeMsg.RECOVER_RECORD_NOT_FOUND);
+        }
+
+        // 4. 校验所有记录属于当前用户
+        boolean hasForeignRecord = records.stream()
+                .anyMatch(r -> !userId.equals(r.getUserId()));
+        if (hasForeignRecord) {
+            throw new BusinessException(CodeMsg.RECOVER_NOT_BELONG_TO_USER);
+        }
+
+        // 5. 校验所有记录处于待报销状态
+        boolean hasInvalidStatus = records.stream()
+                .anyMatch(r -> r.getRecoverableStatus() != RecordConstant.TO_RECOVERABLE);
+        if (hasInvalidStatus) {
+            throw new BusinessException(CodeMsg.RECOVER_STATUS_NOT_ALLOWED);
+        }
+
+        // 6. 获取收入类型的字典项
+        DictDO dictDO = dictService.getByCode(RecordConstant.RECORD_TYPE);
+        DictItemDO incomeDictItem = dictItemService.getByValue(dictDO.getId().intValue(), RecordConstant.INCOME_RECORD_TYPE);
+
+        // 7. 计算报销总金额
+        double total = records.stream()
+                .mapToDouble(r -> Math.abs(r.getAmount()))
+                .sum();
+
+        // 8. 创建报销收入记录
+        RecordDetailDO recoverRecord = new RecordDetailDO();
+        recoverRecord.setUserId(userId);
+        recoverRecord.setRecordAccountId(records.get(0).getRecordAccountId());
+        recoverRecord.setRecordBookId(records.get(0).getRecordBookId());
+        recoverRecord.setRecordType(incomeDictItem.getId().intValue());
+        recoverRecord.setRecordCategory(RecordConstant.BXK);
+        recoverRecord.setAmount(Math.abs(total));
+        recoverRecord.setOccurTime(new Date());
+        recoverRecord.setRemark(buildRecoverRemark(records.size(), total));
+        recordDetailMapper.insert(recoverRecord);
+
+        // 9. 将原记录标记为已报销
+        records.forEach(r -> r.setRecoverableStatus(RecordConstant.IS_RECOVERABLE));
+        updateBatchById(records);
+    }
+
+    private String buildRecoverRemark(int count, double amount) {
+        return "报销款：共报销" + count + "笔账单，总金额为" + amount + "¥";
     }
 
     @Override
