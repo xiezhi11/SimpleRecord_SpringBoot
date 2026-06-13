@@ -41,6 +41,7 @@ public enum CodeMsg {
     ROLE_NAME_EXIST(600004, "角色名重复"),
     ROLE_EDIT_NOT_ALLOWED(600005, "系统内置角色请勿删除或改名"),
     DICT_CODE_EXIST(600006, "字典编码重复"),
+    ROLE_NOT_EXIST_OR_DISABLED(600007, "角色不存在或已停用"),
 
     // 记账相关 格式700 xxx
     INSERT_RECORD_ERROR(700001,"新增记账记录失败"),

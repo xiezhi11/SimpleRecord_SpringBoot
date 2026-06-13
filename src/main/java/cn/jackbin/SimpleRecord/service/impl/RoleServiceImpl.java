@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -82,5 +83,26 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, RoleDO> implements 
         QueryWrapper<RoleDO> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("name", name);
         return roleMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public void checkRolesAvailable(List<Integer> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return; // 清空角色属于允许的操作
+        }
+        List<Integer> distinctIds = roleIds.stream()
+                .filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (distinctIds.isEmpty()) {
+            return;
+        }
+        // listByIds 受 @TableLogic 影响，只返回未停用（未软删）的角色
+        Set<Integer> activeIds = listByIds(distinctIds).stream()
+                .map(r -> r.getId().intValue()).collect(Collectors.toSet());
+        List<Integer> invalidIds = distinctIds.stream()
+                .filter(id -> !activeIds.contains(id)).collect(Collectors.toList());
+        if (!invalidIds.isEmpty()) {
+            throw new BusinessException(CodeMsg.ROLE_NOT_EXIST_OR_DISABLED,
+                    CodeMsg.ROLE_NOT_EXIST_OR_DISABLED.getMessage() + "，角色ID：" + invalidIds);
+        }
     }
 }

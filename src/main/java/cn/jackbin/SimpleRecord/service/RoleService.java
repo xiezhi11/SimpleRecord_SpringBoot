@@ -31,4 +31,6 @@ public interface RoleService extends IService<RoleDO> {
     void reset(Integer id);
 
     RoleDO getByName(String name);
+
+    void checkRolesAvailable(List<Integer> roleIds);
 }
